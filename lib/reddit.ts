@@ -18,11 +18,22 @@ type DecodoStrategy = {
 };
 
 function buildDecodoAuthorizationHeader(apiKey: string): string {
+  // If already has Basic or Bearer prefix, use as-is
   if (/^(Basic|Bearer)\s+/i.test(apiKey)) {
     return apiKey;
   }
 
-  return `Basic ${apiKey}`;
+  // Check if it looks like a Base64-encoded credential (contains colon)
+  try {
+    const decoded = Buffer.from(apiKey, "base64").toString("utf-8");
+    if (decoded.includes(":")) {
+      return `Basic ${apiKey}`;
+    }
+  } catch {
+    // Not base64, continue
+  }
+
+  return `Bearer ${apiKey}`;
 }
 
 const decodoStrategies: DecodoStrategy[] = [
