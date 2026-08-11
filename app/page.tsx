@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import type { AnalyzeIdeasResponse, RedditPost, SaasIdea } from "@/lib/types";
 import { validateSubredditInput } from "@/lib/subreddit";
+import { ExportMenu } from "@/components/ExportMenu";
 
 const EXAMPLE_SUBREDDITS = ["saas", "smallbusiness", "freelance", "marketing"];
 const LOADING_PHASES = [
@@ -113,7 +114,7 @@ function SourcePill({ title, url }: { title: string; url: string }) {
   );
 }
 
-function IdeaCard({ idea }: { idea: SaasIdea }) {
+function IdeaCard({ idea, subreddit }: { idea: SaasIdea; subreddit: string }) {
   return (
     <article className="glass-panel rounded-[28px] p-6 sm:p-7">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -125,12 +126,15 @@ function IdeaCard({ idea }: { idea: SaasIdea }) {
             {idea.idea_name}
           </h2>
         </div>
-        <div
-          className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-semibold ${scoreTone(
-            idea.score,
-          )}`}
-        >
-          Score {idea.score}/10
+        <div className="flex flex-col items-end gap-2 sm:items-end">
+          <div
+            className={`inline-flex items-center rounded-full border px-4 py-2 text-sm font-semibold ${scoreTone(
+              idea.score,
+            )}`}
+          >
+            Score {idea.score}/10
+          </div>
+          <ExportMenu mode="single" idea={idea} subreddit={subreddit} label="Export" />
         </div>
       </div>
 
@@ -489,7 +493,7 @@ export default function Home() {
 
       {result ? (
         <section className="mt-6 space-y-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="font-mono text-[0.72rem] uppercase tracking-[0.24em] text-slate-500">
                 Results
@@ -498,14 +502,22 @@ export default function Home() {
                 r/{result.subreddit} produced {result.ideas.length} validated ideas
               </h2>
             </div>
-            <p className="text-sm text-slate-500">
-              Analyzed {result.source.posts.length} deduplicated source threads and their strongest comments.
-            </p>
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              <p className="text-sm text-slate-500">
+                Analyzed {result.source.posts.length} deduplicated source threads and their strongest comments.
+              </p>
+              <ExportMenu
+                mode="bulk"
+                ideas={result.ideas}
+                subreddit={result.subreddit}
+                label="Export All"
+              />
+            </div>
           </div>
 
           <div className="grid gap-5 xl:grid-cols-2">
             {result.ideas.map((idea) => (
-              <IdeaCard key={`${idea.idea_name}-${idea.problem}`} idea={idea} />
+              <IdeaCard key={`${idea.idea_name}-${idea.problem}`} idea={idea} subreddit={result.subreddit} />
             ))}
           </div>
 
