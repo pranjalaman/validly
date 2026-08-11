@@ -52,7 +52,7 @@ Validly is a Next.js application that scrapes weekly Reddit discussions from any
    INSFORGE_API_KEY=your_insforge_api_key_here
 
    # Optional - Customize Insforge configuration
-   INSFORGE_URL=https://c3ite2jk.us-east.insforge.app
+   INSFORGE_URL=<INSFORGE_PROJECT_URL>
    INSFORGE_MODEL=openai/gpt-4o-mini
    INSFORGE_RESULTS_TABLE=validated_saas_ideas
 
@@ -180,7 +180,7 @@ Analyzes a subreddit for SaaS opportunities.
 |----------|----------|---------|-------------|
 | `DECODO_API_KEY` | ✅ Yes | - | Your Decodo API key for Reddit scraping |
 | `INSFORGE_API_KEY` | ✅ Yes | - | Your Insforge API key for AI analysis |
-| `INSFORGE_URL` | ❌ No | `https://c3ite2jk.us-east.insforge.app` | Insforge API base URL |
+| `INSFORGE_URL` | ❌ No | `<INSFORGE_PROJECT_URL>` | Insforge API base URL |
 | `INSFORGE_MODEL` | ❌ No | `openai/gpt-4o-mini` | AI model to use |
 | `INSFORGE_RESULTS_TABLE` | ❌ No | - | Optional database table name |
 | `DECODO_PROXY_POOL` | ❌ No | `premium` | Proxy pool type for scraping (`standard` or `premium`) |
