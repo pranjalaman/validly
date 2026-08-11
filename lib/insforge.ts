@@ -30,7 +30,7 @@ const ideaSchema = z.object({
   source_threads: z.array(sourceThreadSchema).min(1).max(3),
 });
 
-const ideaArraySchema = z.array(ideaSchema).min(5).max(10);
+const ideaArraySchema = z.array(ideaSchema).min(1).max(10);
 
 const SYSTEM_PROMPT = `You are an expert startup analyst and product researcher.
 
@@ -123,25 +123,48 @@ function parseJsonArray(raw: string): SaasIdea[] {
   const start = withoutCodeFence.indexOf("[");
   const end = withoutCodeFence.lastIndexOf("]");
 
-  if (start === -1 || end === -1 || end < start) {
+  if (start === -1) {
     throw new Error("Insforge AI response did not include a JSON array.");
   }
 
-  const candidate = withoutCodeFence.slice(start, end + 1);
+  const rawJson = end > start ? withoutCodeFence.slice(start, end + 1) : withoutCodeFence.slice(start);
 
+  let rawItems: unknown[] = [];
   try {
-    return ideaArraySchema.parse(JSON.parse(candidate));
+    rawItems = JSON.parse(rawJson);
   } catch {
     try {
-      return ideaArraySchema.parse(JSON.parse(jsonrepair(candidate)));
-    } catch (repairError) {
-      throw new Error(
-        repairError instanceof Error
-          ? `Failed to parse Insforge AI JSON: ${repairError.message}`
-          : "Failed to parse Insforge AI JSON.",
-      );
+      rawItems = JSON.parse(jsonrepair(rawJson));
+    } catch {
+      try {
+        rawItems = JSON.parse(jsonrepair(`${rawJson}]`));
+      } catch (repairError) {
+        throw new Error(
+          repairError instanceof Error
+            ? `Failed to parse Insforge AI JSON: ${repairError.message}`
+            : "Failed to parse Insforge AI JSON.",
+        );
+      }
     }
   }
+
+  if (!Array.isArray(rawItems)) {
+    throw new Error("Parsed Insforge AI output is not a JSON array.");
+  }
+
+  const validIdeas: SaasIdea[] = [];
+  for (const item of rawItems) {
+    const result = ideaSchema.safeParse(item);
+    if (result.success) {
+      validIdeas.push(result.data);
+    }
+  }
+
+  if (validIdeas.length === 0) {
+    throw new Error("No valid SaaS ideas could be extracted from Insforge AI response.");
+  }
+
+  return validIdeas;
 }
 
 function compactStructuredData(data: StructuredRedditData): StructuredRedditData {
@@ -261,7 +284,7 @@ export async function analyzeWithAI(data: StructuredRedditData): Promise<SaasIde
   console.log(`\n🚀 [API CALL] Sending request to AI...`);
   console.log(`   Model: ${env.insforgeModel}`);
   console.log(`   Temperature: 0.2`);
-  console.log(`   Max Tokens: 2200`);
+  console.log(`   Max Tokens: 4096`);
   console.log(`   System Prompt Length: ${SYSTEM_PROMPT.length} chars`);
   console.log(`   User Content Length: ${JSON.stringify(compactData).length} chars`);
   
@@ -269,7 +292,7 @@ export async function analyzeWithAI(data: StructuredRedditData): Promise<SaasIde
   const response = await insforge.ai.chat.completions.create({
     model: env.insforgeModel,
     temperature: 0.2,
-    maxTokens: 2200,
+    maxTokens: 4096,
     messages: [
       {
         role: "system",

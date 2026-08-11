@@ -52,23 +52,32 @@ Validly is a Next.js application that scrapes weekly Reddit discussions from any
    INSFORGE_API_KEY=your_insforge_api_key_here
 
    # Optional - Customize Insforge configuration
-   INSFORGE_URL=https://api.insforge.dev
+   INSFORGE_URL=<INSFORGE_PROJECT_URL>
    INSFORGE_MODEL=openai/gpt-4o-mini
    INSFORGE_RESULTS_TABLE=validated_saas_ideas
 
    # Optional - Customize Decodo scraping behavior
-   DECODO_PROXY_POOL=residential
-   DECODO_HEADLESS_MODE=true
+   DECODO_PROXY_POOL=premium
+   DECODO_HEADLESS_MODE=html
    DECODO_TIMEOUT_MS=30000
    INSFORGE_TIMEOUT_MS=60000
    ```
 
-4. **Run the development server**
+4. **Link InsForge Backend & Run Migrations**
+   ```bash
+   # Link project to InsForge (if initializing fresh clone)
+   npx @insforge/cli link
+
+   # Apply database migrations to create validated_saas_ideas table
+   npx @insforge/cli db migrations up --all
+   ```
+
+5. **Run the development server**
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
+6. **Open your browser**
    
    Navigate to [http://localhost:3000](http://localhost:3000)
 
@@ -80,11 +89,16 @@ Validly is a Next.js application that scrapes weekly Reddit discussions from any
 3. Navigate to your dashboard
 4. Copy your API key
 
-### Insforge API Key
-1. Visit [insforge.dev](https://insforge.dev)
-2. Create an account
-3. Go to your project settings
-4. Generate and copy your API key
+### Insforge Backend & API Key
+1. Visit [insforge.dev](https://insforge.dev) or log in via CLI:
+   ```bash
+   npx @insforge/cli login
+   ```
+2. Create or link an InsForge project:
+   ```bash
+   npx @insforge/cli create --name validly
+   ```
+3. Copy your project API key from `.insforge/project.json` or dashboard into `.env.local`.
 
 ## 📁 Project Structure
 
@@ -166,11 +180,11 @@ Analyzes a subreddit for SaaS opportunities.
 |----------|----------|---------|-------------|
 | `DECODO_API_KEY` | ✅ Yes | - | Your Decodo API key for Reddit scraping |
 | `INSFORGE_API_KEY` | ✅ Yes | - | Your Insforge API key for AI analysis |
-| `INSFORGE_URL` | ❌ No | `https://api.insforge.dev` | Insforge API base URL |
+| `INSFORGE_URL` | ❌ No | `<INSFORGE_PROJECT_URL>` | Insforge API base URL |
 | `INSFORGE_MODEL` | ❌ No | `openai/gpt-4o-mini` | AI model to use |
 | `INSFORGE_RESULTS_TABLE` | ❌ No | - | Optional database table name |
-| `DECODO_PROXY_POOL` | ❌ No | `residential` | Proxy pool type for scraping |
-| `DECODO_HEADLESS_MODE` | ❌ No | `true` | Headless browser mode |
+| `DECODO_PROXY_POOL` | ❌ No | `premium` | Proxy pool type for scraping (`standard` or `premium`) |
+| `DECODO_HEADLESS_MODE` | ❌ No | `html` | Headless browser mode (`html` or `png`) |
 | `DECODO_TIMEOUT_MS` | ❌ No | `30000` | Scraping timeout in milliseconds |
 | `INSFORGE_TIMEOUT_MS` | ❌ No | `60000` | AI analysis timeout in milliseconds |
 
