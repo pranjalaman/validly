@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { analyzeWithAI } from "@/lib/insforge";
 import { structureRedditData } from "@/lib/reddit";
+import { parseSubredditInput } from "@/lib/subreddit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,8 +13,10 @@ const requestSchema = z.object({
     .string()
     .trim()
     .min(1, "Subreddit is required")
-    .max(50, "Subreddit is too long")
-    .regex(/^[A-Za-z0-9_]+$/, "Use a subreddit name without /r/ or spaces"),
+    .transform((val) => parseSubredditInput(val))
+    .refine((val) => /^[A-Za-z0-9_]{1,50}$/.test(val), {
+      message: "Invalid subreddit name. Use letters, numbers, and underscores only (max 50 chars).",
+    }),
 });
 
 function getErrorMessage(error: unknown): string {
