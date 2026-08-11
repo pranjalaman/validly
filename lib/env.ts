@@ -15,16 +15,24 @@ const serverEnvSchema = z.object({
   INSFORGE_URL: optionalUrl,
   INSFORGE_MODEL: z.string().trim().optional(),
   INSFORGE_RESULTS_TABLE: z.string().trim().optional(),
-  DECODO_PROXY_POOL: z.string().trim().optional(),
-  DECODO_HEADLESS_MODE: z.string().trim().optional(),
+  DECODO_PROXY_POOL: z
+    .string()
+    .trim()
+    .optional()
+    .transform((val) => (val === "standard" || val === "premium" ? val : "premium")),
+  DECODO_HEADLESS_MODE: z
+    .string()
+    .trim()
+    .optional()
+    .transform((val) => (val === "html" || val === "png" ? val : "html")),
   DECODO_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
   INSFORGE_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
 });
 
 export type ServerEnv = {
   decodoApiKey: string;
-  decodoProxyPool: string;
-  decodoHeadlessMode: string;
+  decodoProxyPool: "standard" | "premium";
+  decodoHeadlessMode: "html" | "png";
   decodoTimeoutMs: number;
   insforgeApiKey: string;
   insforgeUrl: string;
@@ -54,11 +62,11 @@ export function getServerEnv(): ServerEnv {
 
   cachedEnv = {
     decodoApiKey: parsedEnv.DECODO_API_KEY,
-    decodoProxyPool: parsedEnv.DECODO_PROXY_POOL || "premium",
-    decodoHeadlessMode: parsedEnv.DECODO_HEADLESS_MODE || "html",
+    decodoProxyPool: parsedEnv.DECODO_PROXY_POOL,
+    decodoHeadlessMode: parsedEnv.DECODO_HEADLESS_MODE,
     decodoTimeoutMs: parsedEnv.DECODO_TIMEOUT_MS ?? 20000,
     insforgeApiKey: parsedEnv.INSFORGE_API_KEY,
-    insforgeUrl: parsedEnv.INSFORGE_URL ?? "https://api.insforge.dev",
+    insforgeUrl: parsedEnv.INSFORGE_URL ?? "https://c3ite2jk.us-east.insforge.app",
     insforgeModel: parsedEnv.INSFORGE_MODEL ?? "openai/gpt-4o-mini",
     insforgeTimeoutMs: parsedEnv.INSFORGE_TIMEOUT_MS ?? 90000,
     insforgeResultsTable: parsedEnv.INSFORGE_RESULTS_TABLE || undefined,

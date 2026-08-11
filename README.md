@@ -57,8 +57,8 @@ Validly is a Next.js application that scrapes weekly Reddit discussions from any
    INSFORGE_RESULTS_TABLE=validated_saas_ideas
 
    # Optional - Customize Decodo scraping behavior
-   DECODO_PROXY_POOL=residential
-   DECODO_HEADLESS_MODE=true
+   DECODO_PROXY_POOL=premium
+   DECODO_HEADLESS_MODE=html
    DECODO_TIMEOUT_MS=30000
    INSFORGE_TIMEOUT_MS=60000
    ```
@@ -169,8 +169,8 @@ Analyzes a subreddit for SaaS opportunities.
 | `INSFORGE_URL` | ❌ No | `https://api.insforge.dev` | Insforge API base URL |
 | `INSFORGE_MODEL` | ❌ No | `openai/gpt-4o-mini` | AI model to use |
 | `INSFORGE_RESULTS_TABLE` | ❌ No | - | Optional database table name |
-| `DECODO_PROXY_POOL` | ❌ No | `residential` | Proxy pool type for scraping |
-| `DECODO_HEADLESS_MODE` | ❌ No | `true` | Headless browser mode |
+| `DECODO_PROXY_POOL` | ❌ No | `premium` | Proxy pool type for scraping (`standard` or `premium`) |
+| `DECODO_HEADLESS_MODE` | ❌ No | `html` | Headless browser mode (`html` or `png`) |
 | `DECODO_TIMEOUT_MS` | ❌ No | `30000` | Scraping timeout in milliseconds |
 | `INSFORGE_TIMEOUT_MS` | ❌ No | `60000` | AI analysis timeout in milliseconds |
 
