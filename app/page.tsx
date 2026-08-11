@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import type { AnalyzeIdeasResponse, RedditPost, SaasIdea } from "@/lib/types";
+import { validateSubredditInput } from "@/lib/subreddit";
 
 const EXAMPLE_SUBREDDITS = ["saas", "smallbusiness", "freelance", "marketing"];
 const LOADING_PHASES = [
@@ -190,6 +191,8 @@ export default function Home() {
   const [lastSubreddit, setLastSubreddit] = useState("saas");
   const [result, setResult] = useState<AnalyzeIdeasResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [inputError, setInputError] = useState<string | null>(null);
+  const [parsedName, setParsedName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -215,20 +218,46 @@ export default function Home() {
     return () => window.clearInterval(interval);
   }, [loading]);
 
-  async function runAnalysis(nextSubreddit = subreddit) {
+  function handleSubredditChange(value: string) {
+    setSubreddit(value);
+    if (!value.trim()) {
+      setInputError(null);
+      setParsedName(null);
+      return;
+    }
+    const validation = validateSubredditInput(value);
+    if (validation.valid) {
+      setInputError(null);
+      // Show the resolved name only when it differs from what was typed (i.e. a URL was pasted)
+      const isUrl = /^(https?:\/\/|www\.|old\.)|reddit\.com/i.test(value.trim());
+      const hasPrefix = /^\/?r\//i.test(value.trim());
+      setParsedName(isUrl || hasPrefix ? validation.name : null);
+    } else {
+      setInputError(validation.error);
+      setParsedName(null);
+    }
+  }
+
+  async function runAnalysis(overrideSubreddit?: string) {
+    const raw = overrideSubreddit ?? subreddit;
+    const validation = validateSubredditInput(raw);
+
+    if (!validation.valid) {
+      setInputError(validation.error);
+      return;
+    }
+
+    const cleanName = validation.name;
     setLoading(true);
     setError(null);
     setResult(null);
+    setInputError(null);
 
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          subreddit: nextSubreddit.trim().replace(/^r\//i, ""),
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subreddit: cleanName }),
       });
 
       const payload = (await response.json()) as AnalyzeIdeasResponse & { error?: string };
@@ -238,7 +267,7 @@ export default function Home() {
       }
 
       setResult(payload);
-      setLastSubreddit(nextSubreddit);
+      setLastSubreddit(raw);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unexpected request error.");
     } finally {
@@ -246,7 +275,12 @@ export default function Home() {
     }
   }
 
-  const normalizedSubreddit = subreddit.trim().replace(/^r\//i, "") || "saas";
+  const normalizedSubreddit = (() => {
+    const v = validateSubredditInput(subreddit);
+    return v.valid ? v.name : (subreddit.trim() || "saas");
+  })();
+
+  const isInputValid = !inputError && !!subreddit.trim();
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-8 sm:px-8 lg:px-10">
@@ -274,11 +308,35 @@ export default function Home() {
                   Subreddit
                 </span>
                 <input
+                  id="subreddit-input"
                   value={subreddit}
-                  onChange={(event) => setSubreddit(event.target.value)}
-                  placeholder="saas"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                  onChange={(event) => handleSubredditChange(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === "Enter" && isInputValid && !loading) runAnalysis(); }}
+                  placeholder="saas  or  r/saas  or  https://reddit.com/r/saas"
+                  aria-invalid={!!inputError}
+                  aria-describedby={inputError ? "subreddit-error" : parsedName ? "subreddit-hint" : undefined}
+                  className={`w-full rounded-2xl border bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:ring-4 ${
+                    inputError
+                      ? "border-rose-400 focus:border-rose-400 focus:ring-rose-100"
+                      : "border-slate-200 focus:border-orange-400 focus:ring-orange-100"
+                  }`}
                 />
+                {inputError && (
+                  <p id="subreddit-error" role="alert" className="flex items-center gap-1.5 text-sm text-rose-600">
+                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.75-4.75a.75.75 0 001.5 0v-4.5a.75.75 0 00-1.5 0v4.5zm.75-7.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clipRule="evenodd" />
+                    </svg>
+                    {inputError}
+                  </p>
+                )}
+                {!inputError && parsedName && (
+                  <p id="subreddit-hint" className="flex items-center gap-1.5 text-sm text-emerald-600">
+                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                    </svg>
+                    Will analyse <strong>r/{parsedName}</strong>
+                  </p>
+                )}
               </label>
 
               <div className="flex flex-wrap gap-2">
@@ -286,7 +344,7 @@ export default function Home() {
                   <button
                     key={item}
                     type="button"
-                    onClick={() => setSubreddit(item)}
+                    onClick={() => handleSubredditChange(item)}
                     className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                   >
                     r/{item}
@@ -296,9 +354,10 @@ export default function Home() {
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
+                  id="analyze-btn"
                   type="button"
                   onClick={() => runAnalysis()}
-                  disabled={loading}
+                  disabled={loading || !isInputValid}
                   className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                 >
                   {loading ? "Analyzing Reddit signal..." : "Analyze Ideas"}
